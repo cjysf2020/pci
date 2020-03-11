@@ -10,6 +10,7 @@ public class App {
 
     public static void main(String[] args) throws SQLException {
         System.out.println("Hello World");
+        System.out.println("提交");
         PCIStation pciStation = new PCIStation("2020-03-08");
         pciStation.calc();
         System.out.println(pciStation.getTimespan());
