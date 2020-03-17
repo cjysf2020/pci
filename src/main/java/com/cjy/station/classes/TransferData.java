@@ -17,15 +17,15 @@ public class TransferData {
         this.eline = eline;
     }
 
-    public Integer getCount() {
+    public Double getCount() {
         return count;
     }
 
-    public void setCount(Integer count) {
+    public void setCount(Double count) {
         this.count = count;
     }
 
-    public TransferData(String sline, String eline, Integer count){
+    public TransferData(String sline, String eline, Double count){
         this.sline = sline;
         this.eline = eline;
         this.count = count;
@@ -33,5 +33,5 @@ public class TransferData {
 
     private String sline;
     private String eline;
-    private Integer count;
+    private Double count;
 }
