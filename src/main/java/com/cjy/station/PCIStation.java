@@ -1,5 +1,6 @@
 package com.cjy.station;
 
+import com.cjy.lib.CommonUtil;
 import com.cjy.lib.MathUtil;
 import com.cjy.lib.MysqlConn;
 import com.cjy.station.classes.Stations;
@@ -17,7 +18,7 @@ public class PCIStation {
 
     private MysqlConn mysql = new MysqlConn();
     ///////
-    private String inoutTable = "tcal_station_temp";
+    private String inoutTable = "tcal_station";
     private String transferTable = "tcal_transfer";
     private String waitTable = "z_op_platform_passenger";
     private String param1Table = "mx_station_pci_base_info";
@@ -102,7 +103,7 @@ public class PCIStation {
     public void initStations(){
         String[] columns = { "ID", "LINE_ID", "STATION_ID", "STATION_NAME", "STATION_TYPE", "FLOW_IN_MAX", "FLOW_OUT_MAX", "FLOW_WAIT_UP_MAX", "FLOW_WAIT_DOWN_MAX", "WEIGHT_FLOW_IN_OUT",
                 "WEIGHT_FLOW_WAIT", "WEIGHT_FLOW_TRANSFER" };
-        String sql = "select " + getString(columns) + " from " + param1Table + " where STATION_ID is not null limit 50;";
+        String sql = "select " + getString(columns) + " from " + param1Table + " where STATION_ID is not null limit 200;";
         List<Dictionary<String, String>> rs = mysql.select(sql, columns);
         for(Dictionary<String, String> row: rs){
             Stations st = new Stations();
@@ -205,7 +206,7 @@ public class PCIStation {
         // 必须为换乘站
         if(st.getSTATION_TYPE().equals("2")) {
             List<String[]> routes = st.getRoutes();
-            if(routes.size() > 1){
+            if(routes.size() > 0){
                 for(String[] dir:routes){
                     String sline = dir[0];
                     String eline = dir[1];
@@ -248,7 +249,9 @@ public class PCIStation {
         double c = Double.parseDouble(st.getWEIGHT_FLOW_TRANSFER());
         PCI = 10 * (a * P1 + b * P2 + c * P3);
 
-        System.out.println(curdate + "," + timespan[0] + "," + timespan[1] + "," + String.format("%.4f", P2));
+        // System.out.println(curdate + "," + timespan[0] + "," + timespan[1] + "," + String.format("%.4f", P1) + "," + String.format("%.4f", P2) + "," + String.format("%.4f", P3) + "," + String.format("%.4f", PCI));
+
+        // System.out.println(curdate + "," + timespan[0] + "," + timespan[1] + "," + String.format("%.4f", P2));
 //        System.out.println(curdate + "," + timespan[0] + "," + timespan[1] + "," + P1);
 //        System.out.println(curdate + "," + timespan[0] + "," + timespan[1] + "," + P1);
 
@@ -271,9 +274,18 @@ public class PCIStation {
 //        Stations st = getStationById("0115");
 //        String[] times = {"00:00", "23:30"};
 //        calcPCI(times, st);
-        Stations st = getStationById("0122");
+        double[] pciarr = new double[timespan.size()];
+        Stations st = getStationById("0431");
+
+        int i = 0;
         for(String[] times: timespan){
             calcPCI(times, st);
+            pciarr[i++] = PCI;
+        }
+        pciarr = CommonUtil.getRangePCI(pciarr);
+        i = 0;
+        for(String[] times: timespan){
+            System.out.println(curdate + "," + times[0] + "," + times[1] + "," + String.format("%.4f", pciarr[i++]));
         }
 
         mysql.close();

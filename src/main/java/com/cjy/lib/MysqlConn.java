@@ -6,7 +6,7 @@ import java.util.*;
 public class MysqlConn {
     private Connection conn = null;
     PreparedStatement statement = null;
-    private String url = "jdbc:mysql://103.76.60.42:3306/rail_beijing?characterEncoding=UTF-8&useSSL=true";
+    private String url = "jdbc:mysql://103.76.60.42:3306/bjut?characterEncoding=UTF-8&useSSL=true";
     private String username = "emer";
     private String password = "emer123456";
 
@@ -59,7 +59,12 @@ public class MysqlConn {
                 Dictionary<String, String> tmp = new Hashtable<String, String>();
                 for(int i=0;i<columns.length;i++){
                     String key = columns[i];
-                    tmp.put(key, rs.getString(key));
+                    String val = rs.getString(key);
+                    if(val != null){
+                        tmp.put(key, val);
+                    }else{
+                        tmp.put(key, "0");
+                    }
                 }
                 result.add(tmp);
             }
