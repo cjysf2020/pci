@@ -33,6 +33,7 @@ public class PCIStation {
     private double P3 = 0.0;
     private double PCI = 0.0;
     private int CROWD_LEVEL = 0;
+    private List<Integer> editIds = new ArrayList<Integer>();
 
 
     public PCIStation(String curdate){
@@ -137,9 +138,9 @@ public class PCIStation {
     ///计算进出站能力饱和度
     public void calcInOut(String[] timespan, Stations st){
         String stime = curdate + " " + timespan[0] + ":00";
-        String etime = curdate + " " + timespan[1] + ":59";
-        String inSql = "select FLOW_IN,FLOW_OUT from " + inoutTable + " where STATION_ID='" + st.getSTATION_ID() + "' and COUNT_TIME >= '" + stime + "' and COUNT_TIME < '" + etime + "'";
-        String[] columns = { "FLOW_IN", "FLOW_OUT" };
+        String etime = curdate + " " + timespan[1] + ":00";
+        String inSql = "select ID, FLOW_IN,FLOW_OUT from " + inoutTable + " where STATION_ID='" + st.getSTATION_ID() + "' and COUNT_TIME >= '" + stime + "' and COUNT_TIME < '" + etime + "'";
+        String[] columns = { "FLOW_IN", "FLOW_OUT", "ID" };
         List<Dictionary<String, String>> rs = mysql.select(inSql, columns);
         double inCount = 0;
         double outCount = 0;
@@ -148,7 +149,12 @@ public class PCIStation {
             double ocount = Integer.parseInt(row.get(columns[1]));
             inCount += icount;
             outCount += ocount;
+            //
+            Integer id = Integer.parseInt(row.get(columns[2]));
+            editIds.add(id);
         }
+        inCount = inCount / rs.size();
+        outCount = outCount / rs.size();
 
         double[] tmpres = new double[2];
         int inMax = Integer.parseInt(st.getFLOW_IN_MAX());
@@ -163,7 +169,7 @@ public class PCIStation {
     ////计算站台能力饱和度
     public void calcWaitPerson(String[] timespan, Stations st){
         String stime = curdate + " " + timespan[0] + ":00";
-        String etime = curdate + " " + timespan[1] + ":59";
+        String etime = curdate + " " + timespan[1] + ":00";
         String[] columns = { "ptotal", "line_id" };
         String sxsql = "select sum(platform_total) as ptotal,line_id from " + waitTable + " where STATION_TCC='" +
                 st.getSTATION_ID() + "' and direction='上行' and depart_time >= '"+
@@ -199,7 +205,7 @@ public class PCIStation {
     ///计算换乘能力饱和度
     public void calcTransfer(String[] timespan, Stations st){
         String stime = curdate + " " + timespan[0] + ":00";
-        String etime = curdate + " " + timespan[1] + ":59";
+        String etime = curdate + " " + timespan[1] + ":00";
         String[] columns = { "FLOW_TRANSFER" };
         List<TransferData> transferData = new ArrayList<TransferData>();
 
@@ -237,6 +243,9 @@ public class PCIStation {
                 }
             }
             P3 = MathUtil.getMax(tmpres);
+            if(P3 > 1){
+                P3 = 1;
+            }
         }
     }
     ///计算车站PCI指数
@@ -249,7 +258,7 @@ public class PCIStation {
         double c = Double.parseDouble(st.getWEIGHT_FLOW_TRANSFER());
         PCI = 10 * (a * P1 + b * P2 + c * P3);
 
-        // System.out.println(curdate + "," + timespan[0] + "," + timespan[1] + "," + String.format("%.4f", P1) + "," + String.format("%.4f", P2) + "," + String.format("%.4f", P3) + "," + String.format("%.4f", PCI));
+        System.out.println(curdate + "," + timespan[0] + "," + timespan[1] + "," + String.format("%.4f", P1) + "," + String.format("%.4f", P2) + "," + String.format("%.4f", P3) + "," + String.format("%.4f", PCI));
 
         // System.out.println(curdate + "," + timespan[0] + "," + timespan[1] + "," + String.format("%.4f", P2));
 //        System.out.println(curdate + "," + timespan[0] + "," + timespan[1] + "," + P1);
@@ -261,10 +270,18 @@ public class PCIStation {
         for(Dictionary<String, String> row: rs){
             CROWD_LEVEL = Integer.parseInt(row.get(columns[0]));
         }
+
+        // 数据库修改
+        // UpdateData();
+    }
+
+    public void UpdateData(){
+        String sql = "update " + inoutTable + " set PCI=" + PCI + ", CROWD_LEVEL=" + CROWD_LEVEL + " where ID=" + editIds.get(0);
+        mysql.update(sql);
     }
 
     public void calc(){
-
+        editIds.clear();
 //        for(Stations st: stations){
 //            for(String[] times: timespan){
 //                calcPCI(times, st);
@@ -275,18 +292,20 @@ public class PCIStation {
 //        String[] times = {"00:00", "23:30"};
 //        calcPCI(times, st);
         double[] pciarr = new double[timespan.size()];
-        Stations st = getStationById("0431");
+        Stations st = getStationById("0829");
 
         int i = 0;
         for(String[] times: timespan){
-            calcPCI(times, st);
-            pciarr[i++] = PCI;
+            //if(times[0].equals("08:15")) {
+                calcPCI(times, st);
+                pciarr[i++] = PCI;
+            //}
         }
-        pciarr = CommonUtil.getRangePCI(pciarr);
-        i = 0;
-        for(String[] times: timespan){
-            System.out.println(curdate + "," + times[0] + "," + times[1] + "," + String.format("%.4f", pciarr[i++]));
-        }
+//        pciarr = CommonUtil.getRangePCI(pciarr);
+//        i = 0;
+//        for(String[] times: timespan){
+//            System.out.println(curdate + "," + times[0] + "," + times[1] + "," + String.format("%.4f", pciarr[i++]));
+//        }
 
         mysql.close();
     }

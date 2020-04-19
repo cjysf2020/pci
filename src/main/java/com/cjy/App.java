@@ -1,6 +1,7 @@
 package com.cjy;
 
 import com.cjy.station.PCILine;
+import com.cjy.station.PCINet;
 import com.cjy.station.PCIStation;
 
 import java.sql.Connection;
@@ -19,7 +20,11 @@ public class App {
         System.out.println("计算完成");
 
 //        System.out.println("时间,开始时间,结束时间,PCI");
-//        PCILine line = new PCILine("97", "2017-10-30");
+//        PCILine line = new PCILine("01", "2017-10-30");
 //        line.calc();
+
+//        System.out.println("时间,开始时间,结束时间,PCI");
+//        PCINet net = new PCINet("2017-10-30");
+//        net.calc();
     }
 }

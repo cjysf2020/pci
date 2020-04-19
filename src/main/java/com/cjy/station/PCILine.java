@@ -6,6 +6,7 @@ import com.cjy.station.lineclass.LinePCIWeight;
 import com.cjy.station.lineclass.LineSection;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Dictionary;
 import java.util.List;
 
@@ -30,7 +31,7 @@ public class PCILine {
     /** */
     public void initLineSection(String dir, String[] timespan){
         String stime = curdate + " " + timespan[0] + ":00";
-        String etime = curdate + " " + timespan[1] + ":59";
+        String etime = curdate + " " + timespan[1] + ":00";
         String[] columns = { "SECTION_ID", "LINE_ID", "DIRECTION", "train_load" };
         String sql = "select " + CommonUtil.getString(columns) + " from section_base_info,z_op_traincapacity where LINE_ID='" +
                 this.lineId + "' and DIRECTION='" + dir + "' and section_base_info.SECTION_ID=z_op_traincapacity.section_code and depart_time >= '" + stime + "' and depart_time < '" + etime + "'";
@@ -137,8 +138,37 @@ public class PCILine {
         Double res = alpha * this.Il_Station + gama * 0.5 * (Ilsx + Ilxx);
         this.Ilres = res;
 
+        /////
+        String[] columns = { "CROWD_LEVEL" };
+        String sql = "select " + CommonUtil.getString(columns) + " from mx_pci_crowd_level where PCI_TYPE=2 and PCI_MIN <= " + res + " and PCI_MAX > " + res;
+        List<Dictionary<String, String>> rs = mysql.select(sql, columns);
+        Integer clevel = 0;
+        for(Dictionary<String, String> row: rs){
+            clevel = Integer.parseInt(row.get(columns[0]));
+        }
+
+        InsertData(times, clevel);
+
         System.out.println(curdate + "," + times[0] + "," + times[1] + "," + String.format("%.4f", res));
 
+    }
+
+    public void InsertData(String[] times, Integer level){
+        String stime = curdate + " " + times[0] + ":00";
+        String etime = curdate + " " + times[1] + ":00";
+        String[] columns = { "fin", "fout", "ftran", "LINE_NAME" };
+        String sql = "select sum(FLOW_IN) as fin, sum(FLOW_OUT) as fout, sum(FLOW_TRANSFER) as ftran, LINE_NAME from tcal_station where LINE_ID='" + lineId + "' and COUNT_TIME>='" + stime + "' and COUNT_TIME < '" + etime + "' ";
+        List<Dictionary<String, String>> rs = mysql.select(sql, columns);
+        Dictionary<String, String> row = rs.get(0);
+        Integer fin = Integer.parseInt(row.get(columns[0]));
+        Integer fout = Integer.parseInt(row.get(columns[1]));
+        Integer ftran = Integer.parseInt(row.get(columns[2]));
+        String linename = row.get(columns[3]);
+        Date now = new Date();
+
+        ///TODO: String isql = "insert into tcal_line ";
+
+        System.out.println(sql);
     }
 
     public void calc(){
